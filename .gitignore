@@ -1,0 +1,9 @@
+*.o
+*.asm
+*.lst
+*.sym
+*.ihx
+*.map
+*.noi
+.vscode
+.DS_Store
