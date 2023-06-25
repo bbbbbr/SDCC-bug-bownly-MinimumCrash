@@ -1,87 +1,59 @@
 #include <gb/gb.h>
 #include <rand.h>
 
-#include "Engine/enums.h"
-#include "Objects/PlayerObject.h"
-#include "States/LevelState.h"
 
-UINT8 vbl_count;
-UINT8 curJoypad;
-UINT8 prevJoypad;
-UINT8 i;  // Used mostly for loops
-UINT8 j;  // Used mostly for loops
-UINT8 k;  // Used for whatever
-UINT8 l;  // Used for whatever
-UINT8 m;  // Used for menus generally
-UINT8 n;  // Used for menus generally
-UINT8 p;  // Used for passing values between states
-UINT8 r;  // Used for randomization stuff
+typedef enum {
+    DIR_UP = 0U,
+    DIR_DOWN = 24U,
+    DIR_LEFT = 36U,
+    DIR_RIGHT = 12U
+} DIRECTION;  // These are in increments of 12 to make the math faster when using directions for sprite frame indices
 
-UINT8 gamestate = STATE_TITLE;
-UINT8 substate;
 
-UINT8 animFrame = 0U;
+ 
+typedef struct PlayerObject {
+    UINT8 spriteId;
+    UINT8 animFrame;
+    WORD xSpr;  // Assumes 4 left shifted bits of subpixels
+    WORD ySpr;
+    INT16 xMap;
+    INT16 yMap;
+    UINT8 xTile;
+    UINT8 yTile;
+    UINT8 topOffsetInPx;  // Offset from top to center in px
+    UINT8 bottomOffsetInPx;
+    UINT8 leftOffsetInPx;
+    UINT8 rightOffsetInPx;
+    DIRECTION dir;
+    UINT8 moveSpeed;
+    INT8 xVel;
+    INT8 yVel;
+    UINT8 hpMax;
+    UINT8 hpCur;
+} PlayerObject;
 
-// UINT16 camera_x = 0U;
-// UINT16 camera_y = 0U;
+
 
 PlayerObject player;
 
-void initRAM(UINT8);
 
-static void phaseLoop(void);
-static void calcPhysics(void);
+static void func_1(void);
+static void func_2(void);
 
 void main(void)
 {
- 	// initRAM(0U);
 
-    // Sound stuff
-    // NR52_REG = 0x80; // is 1000 0000 in binary and turns on sound
-    // NR50_REG = 0x77; // sets the volume for both left and right channel just set to max 0x77
-    // NR51_REG = 0xFF; // is 1111 1111 in binary, select which chanels we want to use in this case all of them. One bit for the L one bit for the R of all four channels
-    // set_interrupts(TIM_IFLAG | VBL_IFLAG);
- 
-    // SPRITES_8x16;
-
-    // init_bkg(0xFFU);
     DISPLAY_ON;
-    SHOW_SPRITES;
-    SHOW_BKG;
-
-    gamestate = STATE_LEVEL;
-    substate = SUB_INIT;
-    
-    while(1U)
-    {
-        wait_vbl_done();
-
-        // SWITCH_ROM(2U);
-        // LevelStateMain();
-        phaseLoop();
-
-    }
+    SHOW_BKG;    
+    func_1();
 }
 
 
+UINT8 i;  // Used mostly for loops
+UINT8 j;  // Used mostly for loops
+UINT8 k;  // Used for whatever
 
-// extern UINT8 curJoypad;
-// extern UINT8 prevJoypad;
-// extern UINT8 i;  // Used mostly for loops
-// extern UINT8 j;  // Used mostly for loops
-// extern UINT8 k;  // Used for whatever
-// extern INT8 l;  // Used for whatever
-// extern UINT8 m;  // Used for menus generally
-// extern UINT8 n;  // Used for menus generally
-// extern UINT8 p;  // Used for passing values between states
-// extern UINT8 r;  // Used for randomization stuff
 
-// extern UINT8 animFrame;
-
-// extern PlayerObject player;
-UINT8 playerstate;
-
-// extern UINT8 gamestate;
 static UINT8 playGrid[32U][32U];
 
 #define STARTPOS 0U
@@ -121,20 +93,18 @@ static UBYTE redraw;
 
 
 
-static void phaseLoop(void)
+static void func_1(void)
 {
     player.xVel = player.moveSpeed;
     player.yVel = 0;
-    player.state = PLAYER_WALKING;
     player.dir = DIR_RIGHT;
 
-    if (player.state == PLAYER_WALKING)
-        calcPhysics();
+    func_2();
 }
 
 
 /******************************** HELPER METHODS *********************************/
-static void calcPhysics(void)
+static void func_2(void)
 {
     // Hypothetical coords that include velocity changes
     INT16 x = player.xSpr + player.xVel;
