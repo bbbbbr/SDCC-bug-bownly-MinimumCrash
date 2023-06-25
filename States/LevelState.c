@@ -2,11 +2,11 @@
 #include <rand.h>
 #include <string.h>
 
-#include "../Engine/common.h"
+// #include "../Engine/common.h"
 #include "../Engine/enums.h"
 
-#include "../Assets/Tiles/fontTiles.h"
-#include "../Assets/Tiles/TadTiles.h"
+// #include "../Assets/Tiles/fontTiles.h"
+// #include "../Assets/Tiles/TadTiles.h"
 
 #include "../Objects/PlayerObject.h"
 
@@ -21,14 +21,12 @@ extern UINT8 n;  // Used for menus generally
 extern UINT8 p;  // Used for passing values between states
 extern UINT8 r;  // Used for randomization stuff
 
-extern UINT8 animTick;
 extern UINT8 animFrame;
 
 extern PlayerObject player;
 UINT8 playerstate;
 
 extern UINT8 gamestate;
-extern UINT8 substate;
 static UINT8 playGrid[32U][32U];
 
 #define STARTPOS 0U
@@ -41,11 +39,8 @@ static UINT16 camera_max_x = 10U * 16U;
 static UINT16 camera_max_y = 9U * 16U;
 static UINT8 walkableTileCount = 6U;
 
-// current and new positions of the camera in pixels
 static WORD camera_x = STARTCAM, camera_y = STARTCAM, new_camera_x = STARTCAM, new_camera_y = STARTCAM;
-// current and new position of the map in tiles
 static UBYTE map_pos_x = STARTPOS, map_pos_y = STARTPOS, new_map_pos_x = STARTPOS, new_map_pos_y = STARTPOS;
-// redraw flag, indicates that camera position was changed
 static UBYTE redraw;
 
 #define PLAYER_X_LEFT_BOUND_PX   8U
@@ -69,138 +64,28 @@ static UBYTE redraw;
 #define metatileToPx(metatile) ((metatile) << 4U)
 #define pxToMetatile(px) ((px) >> 4U)
 
-
-/* SUBSTATE METHODS */
-static void phaseInit(void);
 static void phaseLoop(void);
 
-/* INPUT METHODS */
-static void inputs(void);
 
 /* HELPER METHODS */
 static void calcPhysics(void);
-static void commonInit(void);
-
-/* DISPLAY METHODS */
-static void animatePlayer(void);
 
 
 void LevelStateMain(void)
 {
-    curJoypad = joypad();
-
-    switch (substate)
-    {
-        case SUB_INIT:
-            phaseInit();
-            break;
-        case SUB_LOOP:
-            phaseLoop();
-            break;
-        default:  // Abort to title in the event of unexpected state
-            gamestate = STATE_TITLE;
-            substate = SUB_INIT;
-            break;
-    }
-    prevJoypad = curJoypad;
+    phaseLoop();
 }
 
-
-/******************************** SUBSTATE METHODS *******************************/
-static void phaseInit(void)
-{
-    // Initializations
-    animTick = 0U;
-    
-    HIDE_WIN;
-    SHOW_SPRITES;
-    SPRITES_8x16;
-
-    // // Check levelId, pull appropriate level
-    // loadLevel();
-
-    player.xTile = 1U;
-    player.yTile = 1U;
-    player.xSpr = 88U;
-    player.ySpr = 88U;
-
-    commonInit();
-
-    substate = SUB_LOOP;
-
-    player.moveSpeed = 21U;
-    set_bkg_tile_xy(18U,17U,player.moveSpeed/10U);
-    set_bkg_tile_xy(19U,17U,player.moveSpeed%10U);
-
-    // fadein();
-    OBP0_REG = DMG_PALETTE(DMG_LITE_GRAY, DMG_WHITE, DMG_LITE_GRAY, DMG_BLACK);
-}
 
 static void phaseLoop(void)
 {
-    ++animTick;
-    inputs();
-    animatePlayer();
+    player.xVel = player.moveSpeed;
+    player.yVel = 0;
+    player.state = PLAYER_WALKING;
+    player.dir = DIR_RIGHT;
+
     if (player.state == PLAYER_WALKING)
         calcPhysics();
-}
-
-
-/******************************** INPUT METHODS *********************************/
-static void inputs(void)
-{
-    // Movement
-    if (player.state == PLAYER_IDLE || player.state == PLAYER_WALKING)
-    {
-        if (curJoypad & J_UP)
-        {
-            if (player.xSpr != TOP_BOUND)
-            {
-                player.xVel = 0;
-                player.yVel = -player.moveSpeed;
-                player.state = PLAYER_WALKING;
-                player.dir = DIR_UP;
-            }
-        }
-        else if (curJoypad & J_DOWN)
-        {
-            if (player.xSpr != BOTTOM_BOUND)
-            {
-                player.xVel = 0;
-                player.yVel = player.moveSpeed;
-                player.state = PLAYER_WALKING;
-                player.dir = DIR_DOWN;
-            }
-        }
-        else if (curJoypad & J_LEFT)
-        {
-            if (player.xSpr != LEFT_BOUND)
-            {
-                player.xVel = -player.moveSpeed;
-                player.yVel = 0;
-                player.state = PLAYER_WALKING;
-                player.dir = DIR_LEFT;
-            }
-        }
-        else if (curJoypad & J_RIGHT)
-        {
-            if (player.xSpr != RIGHT_BOUND)
-            {
-                player.xVel = player.moveSpeed;
-                player.yVel = 0;
-                player.state = PLAYER_WALKING;
-                player.dir = DIR_RIGHT;
-            }
-        }
-
-        else if (player.state == PLAYER_WALKING && !(curJoypad & 0x00001111))
-        {
-            player.state = PLAYER_IDLE;
-            player.xVel = 0;
-            player.yVel = 0;
-        }
-    }
-
 }
 
 
@@ -219,15 +104,7 @@ static void calcPhysics(void)
     // If you comment/uncomment one of these...
     static UINT8 playerTopMetatileIndex;
     playerTopMetatileIndex = pxToMetatile(subPxToPx(y) - 16U + topOffset);
-    // static UINT8 playerBottomMetatileIndex;
-    // playerBottomMetatileIndex = pxToMetatile(subPxToPx(y));
-    // static UINT8 playerLeftMetatileIndex;
-    // playerLeftMetatileIndex = pxToMetatile(subPxToPx(x) - 8U + leftOffset);
-    // static UINT8 playerRightMetatileIndex;
-    // playerRightMetatileIndex = pxToMetatile(subPxToPx(x) + 8U - rightOffset);
 
-    // ...Then you'll need to uncomment/comment the equivalent one of these
-    // UINT8 playerTopMetatileIndex = pxToMetatile(subPxToPx(y) - 16U + topOffset);
     UINT8 playerBottomMetatileIndex = pxToMetatile(subPxToPx(y));
     UINT8 playerLeftMetatileIndex = pxToMetatile(subPxToPx(x) - 8U + leftOffset);
     UINT8 playerRightMetatileIndex = pxToMetatile(subPxToPx(x) + 8U - rightOffset);
@@ -291,53 +168,29 @@ set_bkg_tile_xy(2,6, playerRightMetatileIndex);
     }
 }
 
-static void commonInit(void)
-{
-    // Screen initializations
-    init_bkg(0xFFU);
-    for (i = 0U; i != 39U; ++i)
-        move_sprite(i, 0U, 0U);
+const uint8_t tile_line[] = {0x01u, 0x00u, 0x01u, 0x00u, 0x01u, 0x00u, 0x01u, 0x00u, 0x01u, 0x00u, 0x01u, 0x00u, 0x01u, 0x00u, 0x01u, 0x00u};
 
-    // Initializations
-    animTick = 0U;
-    playerstate = PLAYER_IDLE;
+const uint8_t tile_crash[] = {
+    0x00u, 0x81u, 
+    0x00u, 0x81u, 
+    0x00u, 0x42u, 
+    0x00u, 0x42u, 
+    0x00u, 0x24u, 
+    0x00u, 0x24u, 
+    0x00u, 0x18u,
+    0x00u, 0x18u};
+    
 
-    player.xSpr = 1000;
-    player.ySpr = 1000;
-
-    set_bkg_data(0x00U, 10U, fontTiles);
-    set_sprite_data(0U, 48U, owTadTiles);
-
-    // Check player coords/dir, draw player appropriately
-    SCX_REG = camera_x; SCY_REG = camera_y;
-
-    animatePlayer();
-
+void small_crash_handler(void) NONBANKED {
+    set_bkg_data(0u,1u, tile_crash);
+    while(1);
 }
 
-/******************************** DISPLAY METHODS ********************************/
-static void animatePlayer(void)
-{
-    switch (player.state)
-    {
-        default:
-            animFrame = 1U;
-            animFrame += (player.dir >> 2U);
-            break;
-        case PLAYER_WALKING:
-            animFrame = animTick % 32U;
-            animFrame /= 8U;
-            if (animFrame == 3U)
-                animFrame = 1U;
-            animFrame += (player.dir >> 2U);
-            break;
-    }
-    animFrame <<= 2U;
-
-    move_sprite(0U, subPxToPx(player.xSpr),      subPxToPx(player.ySpr));
-    move_sprite(1U, subPxToPx(player.xSpr) + 8U, subPxToPx(player.ySpr));
-
-    set_sprite_tile(0U, 0U + animFrame);
-    set_sprite_tile(1U, 2U + animFrame);
-
+void crash_jump(void) __naked NONBANKED {
+    __asm \
+    .area _CRASH_HEADER(ABS)
+    .org    0x38
+    di
+    jp _small_crash_handler
+    __endasm;
 }
