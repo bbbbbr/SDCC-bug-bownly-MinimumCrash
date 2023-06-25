@@ -152,14 +152,6 @@ static void func_2(void)
     // Check for left wall collisions
     i = pxToMetatile(subPxToPx(x) - 8U);
     j = pxToMetatile(subPxToPx(y) - 16U);
-    set_bkg_tile_xy(0,0,i);
-    set_bkg_tile_xy(1,0,j);
-
-
-set_bkg_tile_xy(1,5, playerTopMetatileIndex);
-set_bkg_tile_xy(1,7, playerBottomMetatileIndex);
-set_bkg_tile_xy(0,6, playerLeftMetatileIndex);
-set_bkg_tile_xy(2,6, playerRightMetatileIndex);
 
     if (collided == FALSE)
     {
@@ -182,18 +174,9 @@ set_bkg_tile_xy(2,6, playerRightMetatileIndex);
     }
 }
 
-const uint8_t tile_line[] = {0x01u, 0x00u, 0x01u, 0x00u, 0x01u, 0x00u, 0x01u, 0x00u, 0x01u, 0x00u, 0x01u, 0x00u, 0x01u, 0x00u, 0x01u, 0x00u};
 
-const uint8_t tile_crash[] = {
-    0x00u, 0x81u, 
-    0x00u, 0x81u, 
-    0x00u, 0x42u, 
-    0x00u, 0x42u, 
-    0x00u, 0x24u, 
-    0x00u, 0x24u, 
-    0x00u, 0x18u,
-    0x00u, 0x18u};
-    
+// DEBUG TOOLS
+const uint8_t tile_crash[] = { 0x00u, 0x81u, 0x00u, 0x81u, 0x00u, 0x42u, 0x00u, 0x42u, 0x00u, 0x24u, 0x00u, 0x24u, 0x00u, 0x18u, 0x00u, 0x18u};
 
 void small_crash_handler(void) NONBANKED {
     set_bkg_data(0u,1u, tile_crash);
